@@ -13,14 +13,18 @@ export default function Home() {
 
   // Network Awareness Simulation State (Addressing the Latency Brief)
   const [networkSpeed, setNetworkSpeed] = useState<"excellent" | "poor" | "offline">("excellent");
-  const [isOnline, setIsOnline] = useState(true);
+  const [copied, setCopied] = useState(false);
 
-  // Monitor real browser network state + allow manual simulation for Demo Video
+  // Monitor real browser network state + automatically sync baseline state
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setIsOnline(navigator.onLine);
-      const handleOnline = () => { setIsOnline(true); setNetworkSpeed("excellent"); };
-      const handleOffline = () => { setIsOnline(false); setNetworkSpeed("offline"); };
+      if (!navigator.onLine) {
+        setNetworkSpeed("offline");
+      }
+      
+      const handleOnline = () => setNetworkSpeed("excellent");
+      const handleOffline = () => setNetworkSpeed("offline");
+
       window.addEventListener("online", handleOnline);
       window.addEventListener("offline", handleOffline);
       return () => {
@@ -35,11 +39,17 @@ export default function Home() {
     setIsProcessing(true);
     setPaymentStatus("idle");
 
-    // Mimic the processing architecture based on network conditions
+    // Mimic the processing architecture based on simulated network profiles
     setTimeout(() => {
       setIsProcessing(false);
       setPaymentStatus("success");
     }, networkSpeed === "poor" ? 4000 : 1500);
+  };
+
+  const handleCopyCard = () => {
+    navigator.clipboard.writeText("5434621074252808");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -115,7 +125,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Tokenization Toggle Layer (Slack Hackathon Insight) */}
+            {/* Tokenization Toggle Layer */}
             {paymentMethod === "card" && (
               <div className="bg-zinc-950 border border-zinc-800/80 rounded p-4 flex items-start gap-3">
                 <input 
@@ -178,19 +188,19 @@ export default function Home() {
             </p>
             <div className="grid grid-cols-3 gap-2">
               <button 
-                onClick={() => { setNetworkSpeed("excellent"); setIsOnline(true); }}
+                onClick={() => setNetworkSpeed("excellent")}
                 className={`p-2 rounded text-xs font-mono font-medium border ${networkSpeed === "excellent" ? "bg-emerald-950 border-emerald-500 text-emerald-300" : "bg-zinc-950 border-zinc-800 text-zinc-400"}`}
               >
                 Stable Fiber
               </button>
               <button 
-                onClick={() => { setNetworkSpeed("poor"); setIsOnline(true); }}
+                onClick={() => setNetworkSpeed("poor")}
                 className={`p-2 rounded text-xs font-mono font-medium border ${networkSpeed === "poor" ? "bg-amber-950 border-amber-500 text-amber-300 animate-pulse" : "bg-zinc-950 border-zinc-800 text-zinc-400"}`}
               >
                 2G Fluctuation
               </button>
               <button 
-                onClick={() => { setNetworkSpeed("offline"); setIsOnline(false); }}
+                onClick={() => setNetworkSpeed("offline")}
                 className={`p-2 rounded text-xs font-mono font-medium border ${networkSpeed === "offline" ? "bg-rose-950 border-rose-500 text-rose-300" : "bg-zinc-950 border-zinc-800 text-zinc-400"}`}
               >
                 Total Drop
@@ -205,10 +215,17 @@ export default function Home() {
             </h3>
             <div className="space-y-4 text-xs">
               <div>
-                <span className="text-zinc-500 block mb-1">Nomba Test Card Number</span>
-                <div className="bg-zinc-950 border border-zinc-800 rounded px-3 py-2 flex items-center justify-between text-zinc-200">
-                  <span>5434 6210 7425 2808</span>
-                  <span className="text-[10px] uppercase bg-zinc-800 px-1 rounded text-zinc-400">Copy Ready</span>
+                <span className="text-zinc-500 block mb-1">Nomba Test Card Number (Click to copy)</span>
+                <div 
+                  onClick={handleCopyCard}
+                  className="bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-all rounded px-3 py-2 flex items-center justify-between text-zinc-200 cursor-pointer active:scale-[0.99]"
+                >
+                  <span className="tracking-wide">5434 6210 7425 2808</span>
+                  <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded transition-all font-bold font-mono ${
+                    copied ? "bg-emerald-500 text-black" : "bg-zinc-800 text-zinc-400"
+                  }`}>
+                    {copied ? "Copied!" : "Copy"}
+                  </span>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

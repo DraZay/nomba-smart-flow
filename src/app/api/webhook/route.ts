@@ -22,19 +22,32 @@ export async function POST(req: NextRequest) {
       .update(rawBody)
       .digest('hex');
 
-    // 5. Securely compare signatures using a timing-safe method to avoid side-channel tracking
-    const isVerified = crypto.timingSafeEqual(
-      Buffer.from(computedSignature, 'hex'),
-      Buffer.from(nombaSignature, 'hex')
-    );
+    // Convert both signatures to binary buffers
+    const computedBuffer = Buffer.from(computedSignature, 'hex');
+    const incomingBuffer = Buffer.from(nombaSignature, 'hex');
 
-    if (!isVerified) {
-      console.error('[SECURITY MATCH FAILURE]: Webhook signature mismatch.');
+    // 5. Guard Clause: Prevent timingSafeEqual from throwing an error on mismatched buffer lengths
+    if (computedBuffer.length !== incomingBuffer.length) {
+      console.warn('[SECURITY ALERT]: Incoming signature header length mismatch.');
       return NextResponse.json({ error: 'Invalid security verification' }, { status: 403 });
     }
 
-    // 6. Signature valid! Parse payload for processing
-    const payload = JSON.parse(rawBody);
+    // Securely compare signatures using timing-safe evaluation to stop side-channel analysis
+    const isVerified = crypto.timingSafeEqual(computedBuffer, incomingBuffer);
+
+    if (!isVerified) {
+      console.error('[SECURITY MATCH FAILURE]: Webhook signature content mismatch.');
+      return NextResponse.json({ error: 'Invalid security verification' }, { status: 403 });
+    }
+
+    // 6. Signature valid! Safely parse payload for processing
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: 'Malformed JSON payload structure' }, { status: 400 });
+    }
+
     console.log('[VERIFIED]: Safe Nomba Webhook payload received:', payload.event);
 
     // If a payment succeeds, capture the tokenized card details for recurring logic
